@@ -1,0 +1,86 @@
+{%extends 'base.html'%}
+
+{%block title%}
+Emotional chatbot
+{%endblock%}
+
+{%block styles%}
+.container
+{
+    margin-top: 50px;
+}
+{%endblock%}
+
+{%block chatboti%}
+<div class="container">
+    <h2 class="text-center mb-4"> Emotional Chatbot</h2>
+    <div class="chat-box" id="chat-box">
+        <!-- Chat messages will appear here -->
+    </div>
+    <div class="input-group">
+        <input
+        type="text"
+        id="user-input"
+        class="form-control"
+        placeholder="Share your thoughts or feelings..."
+        />
+        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+        <button class="btn btn-danger ml-2 pl-3" onclick="clearChat()">Clear Chat</button>
+    </div>
+    </div>
+{%endblock%}
+
+{% block scripts %}
+<!-- Page-specific scripts go here -->
+<script>
+    async function sendMessage() {
+        const userInput = document.getElementById("user-input");
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        const chatBox = document.getElementById("chat-box");
+        chatBox.innerHTML += `<div class="user-message"><strong>You:</strong> ${message}</div>`;
+        userInput.value = "";
+
+        try {
+        const response = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message }),
+        });
+
+        const data = await response.json();
+        const reply =
+            data.reply?.trim() || "⚠️ No reply received from the server.";
+
+        chatBox.innerHTML += `<div class="bot-message"><strong>Bot:</strong> ${reply}</div>`;
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+        saveChatHistory();
+
+        } catch (error) {
+        console.error("Error:", error);
+        chatBox.innerHTML += `<div class="bot-message"><strong>Bot:</strong> ❌ Error: ${error.message}</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        saveChatHistory();
+        }
+    }
+
+      // Send message on Enter key
+    document
+        .getElementById("user-input")
+        .addEventListener("keydown", function (e) {
+        if (e.key === "Enter") sendMessage();
+        });
+    function saveChatHistory() {
+    const chatBox = document.getElementById("chat-box");
+    localStorage.setItem("chatHistory", chatBox.innerHTML);
+    }
+    function clearChat() {
+    localStorage.removeItem("chatHistory");
+    document.getElementById("chat-box").innerHTML = "";
+}
+
+    </script>
+{% endblock %}
+

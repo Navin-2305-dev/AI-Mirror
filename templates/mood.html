@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Mood Analysis{% endblock %}
+{% block chatboti %}
+<div class="container mt-4">
+  <h2 class="text-center">📊 Mood Chart</h2>
+  {% if chart %}
+    <img src="data:image/png;base64,{{ chart }}" class="img-fluid mx-auto d-block mt-4" style="max-height: 400px;" />
+    <ul class="mt-4 list-group">
+      {% for mood, count in mood_data.items() %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ mood }}
+          <span class="badge bg-primary rounded-pill">{{ count }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-center mt-4">No mood data available yet. Try chatting first.</p>
+  {% endif %}
+</div>
+{% endblock %}
