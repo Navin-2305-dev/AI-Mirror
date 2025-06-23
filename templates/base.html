@@ -9,32 +9,74 @@
       rel="stylesheet"
     />
     <style>
-      body {
-        background-color: #f8f9fa;
+  body {
+    background-color: #f8f9fa;
+  }
 
-      }
-      .chat-box {
-        max-height: 400px;
-        overflow-y: auto;
-        background: #fff;
-        padding: 15px;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        margin-bottom: 15px;
-      }
-      .user-message {
-        text-align: right;
-        color: #0d6efd;
-        margin-bottom: 10px;
-      }
-      .bot-message {
-        text-align: left;
-        color: #212529;
-        margin-bottom: 10px;
-      }
-      {%block styles%}
-      {%endblock%}
-    </style>
+  .chat-box {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #fff;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+
+  .user-message {
+    text-align: right;
+    color: #0d6efd;
+    margin-bottom: 10px;
+  }
+
+  .bot-message {
+    text-align: left;
+    color: #212529;
+    margin-bottom: 10px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  {% block %}{% endblock %}
+
+  @media (max-width: 768px) {
+    .chat-box {
+      max-height: 300px;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .container {
+      padding: 0 10px;
+    }
+
+    .input-group {
+      flex-direction: column;
+    }
+
+    .input-group input {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn {
+      width: 100%;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+    }
+
+    .navbar-brand {
+      font-size: 1.2rem;
+    }
+  }
+</style>
   </head>
   <body>
     <nav class="navbar navbar-expand-md navbar-dark bg-primary">
