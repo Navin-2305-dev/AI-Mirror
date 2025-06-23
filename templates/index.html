@@ -33,6 +33,12 @@ Emotional chatbot
 {% block scripts %}
 <!-- Page-specific scripts go here -->
 <script>
+     window.addEventListener("load", () => {
+        const savedChat = localStorage.getItem("chatHistory");
+        if (savedChat) {
+            document.getElementById("chat-box").innerHTML = savedChat;
+        }
+    });
     async function sendMessage() {
         const userInput = document.getElementById("user-input");
         const message = userInput.value.trim();
