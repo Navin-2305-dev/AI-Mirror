@@ -31,18 +31,22 @@ Emotional chatbot
 {%endblock%}
 
 {% block scripts %}
-<!-- Page-specific scripts go here -->
+
 <script>
      window.addEventListener("load", () => {
+    const Reload = performance.navigation.type === performance.navigation.TYPE_RELOAD;
+
+    if (Reload) {
+        localStorage.removeItem("chatHistory"); // Clear only on full reload
+        document.getElementById("chat-box").innerHTML = "";
+    } else {
         const savedChat = localStorage.getItem("chatHistory");
         if (savedChat) {
             document.getElementById("chat-box").innerHTML = savedChat;
         }
-    });
-    window.onload = function () {
-    localStorage.removeItem("chatHistory");  // Clear chat history on refresh
-    document.getElementById("chat-box").innerHTML = ""; // Clear chat box content
-    };
+    }
+});
+
     async function sendMessage() {
         const userInput = document.getElementById("user-input");
         const message = userInput.value.trim();
@@ -61,7 +65,7 @@ Emotional chatbot
 
         const data = await response.json();
         const reply =
-            data.reply?.trim() || "⚠️ No reply received from the server.";
+            data.reply?.trim() || "⚠No reply received from the server.";
 
         chatBox.innerHTML += `<div class="bot-message"><strong>Bot:</strong> ${reply}</div>`;
 
@@ -70,7 +74,7 @@ Emotional chatbot
 
         } catch (error) {
         console.error("Error:", error);
-        chatBox.innerHTML += `<div class="bot-message"><strong>Bot:</strong> ❌ Error: ${error.message}</div>`;
+        chatBox.innerHTML += `<div class="bot-message"><strong>Bot:</strong> Error: ${error.message}</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
         saveChatHistory();
         }
