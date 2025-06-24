@@ -39,6 +39,10 @@ Emotional chatbot
             document.getElementById("chat-box").innerHTML = savedChat;
         }
     });
+    window.onload = function () {
+    localStorage.removeItem("chatHistory");  // Clear chat history on refresh
+    document.getElementById("chat-box").innerHTML = ""; // Clear chat box content
+    };
     async function sendMessage() {
         const userInput = document.getElementById("user-input");
         const message = userInput.value.trim();
