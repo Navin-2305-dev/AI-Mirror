@@ -1,100 +1,174 @@
-{%extends 'base.html'%}
+{% extends "base.html" %}
 
-{%block title%}
-Emotional chatbot
-{%endblock%}
-
-{%block styles%}
-.container
-{
-    margin-top: 50px;
-}
-{%endblock%}
-
-{%block chatboti%}
-<div class="container">
-    <h2 class="text-center mb-4"> Emotional Chatbot</h2>
-    <div class="chat-box" id="chat-box">
-        <!-- Chat messages will appear here -->
-    </div>
-    <div class="input-group">
-        <input
-        type="text"
-        id="user-input"
-        class="form-control"
-        placeholder="Share your thoughts or feelings..."
-        />
-        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
-        <button class="btn btn-danger ml-2 pl-3" onclick="clearChat()">Clear Chat</button>
-    </div>
-    </div>
-{%endblock%}
-
-{% block scripts %}
-
-<script>
-     window.addEventListener("load", () => {
-    const Reload = performance.navigation.type === performance.navigation.TYPE_RELOAD;
-
-    if (Reload) {
-        localStorage.removeItem("chatHistory"); // Clear only on full reload
-        document.getElementById("chat-box").innerHTML = "";
-    } else {
-        const savedChat = localStorage.getItem("chatHistory");
-        if (savedChat) {
-            document.getElementById("chat-box").innerHTML = savedChat;
-        }
-    }
-});
-
-    async function sendMessage() {
-        const userInput = document.getElementById("user-input");
-        const message = userInput.value.trim();
-        if (!message) return;
-
-        const chatBox = document.getElementById("chat-box");
-        chatBox.innerHTML += `<div class="user-message"><strong>You:</strong> ${message}</div>`;
-        userInput.value = "";
-
-        try {
-        const response = await fetch("/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message }),
-        });
-
-        const data = await response.json();
-        const reply =
-            data.reply?.trim() || "⚠No reply received from the server.";
-
-        chatBox.innerHTML += `<div class="bot-message"><strong>Bot:</strong> ${reply}</div>`;
-
-        chatBox.scrollTop = chatBox.scrollHeight;
-        saveChatHistory();
-
-        } catch (error) {
-        console.error("Error:", error);
-        chatBox.innerHTML += `<div class="bot-message"><strong>Bot:</strong> Error: ${error.message}</div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-        saveChatHistory();
-        }
-    }
-
-      // Send message on Enter key
-    document
-        .getElementById("user-input")
-        .addEventListener("keydown", function (e) {
-        if (e.key === "Enter") sendMessage();
-        });
-    function saveChatHistory() {
-    const chatBox = document.getElementById("chat-box");
-    localStorage.setItem("chatHistory", chatBox.innerHTML);
-    }
-    function clearChat() {
-    localStorage.removeItem("chatHistory");
-    document.getElementById("chat-box").innerHTML = "";
-}
-
-    </script>
+{% block title %}
+Emotional Chatbot
 {% endblock %}
 
+{% block styles %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<style>
+  .chat-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  .message {
+    max-width: 75%;
+    margin: 10px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    line-height: 1.5;
+  }
+  .user-message {
+    background-color: #3b82f6;
+    color: white;
+    margin-left: auto;
+  }
+  .bot-message {
+    background-color: #e5e7eb;
+    color: #1f2937;
+  }
+  #chat-input {
+    resize: none;
+  }
+  .mic-active {
+    background-color: #ef4444 !important;
+    color: white !important;
+  }
+</style>
+{% endblock %}
+
+{% block chatboti %}
+<div class="min-h-screen bg-gradient-to-br from-indigo-100 to-purple-100 flex flex-col items-center justify-center p-4">
+  <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6">
+    <h1 class="text-3xl font-bold text-center text-indigo-600 mb-6">Emotional Chatbot</h1>
+    <div id="chat-box" class="chat-container mb-4 p-4 bg-gray-50 rounded-lg">
+      {% for msg in chat_messages %}
+        <div class="message {{ 'user-message' if msg.sender == 'user' else 'bot-message' }}">
+          {{ msg.message | safe }}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="flex items-center space-x-2">
+      <textarea id="chat-input" class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="2" placeholder="Type your message..."></textarea>
+      <button id="send-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Send</button>
+      <button id="mic-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition" title="Start/Stop Listening">🎤</button>
+      <button id="speak-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition" title="Speak Last Response">🔊</button>
+      <button id="clear-btn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">Clear</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const chatBox = document.getElementById("chat-box");
+  const chatInput = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("send-btn");
+  const micBtn = document.getElementById("mic-btn");
+  const speakBtn = document.getElementById("speak-btn");
+  const clearBtn = document.getElementById("clear-btn");
+  let lastBotResponse = "";
+
+  // Speech Recognition
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  let isListening = false;
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    chatInput.value = transcript;
+    sendMessage();
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    micBtn.classList.remove("mic-active");
+    micBtn.textContent = "🎤";
+  };
+
+  micBtn.addEventListener("click", () => {
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+      isListening = true;
+      micBtn.classList.add("mic-active");
+      micBtn.textContent = "🛑";
+    }
+  });
+
+  // Text-to-Speech
+  speakBtn.addEventListener("click", () => {
+    if (lastBotResponse) {
+      const utterance = new SpeechSynthesisUtterance(lastBotResponse);
+      utterance.lang = "en-US";
+      window.speechSynthesis.speak(utterance);
+    }
+  });
+
+  // Send Message
+  async function sendMessage() {
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    // Append user message to chat box
+    appendMessage("user", message);
+    chatInput.value = ""; // Clear input
+
+    try {
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const data = await response.json();
+      if (data.reply) {
+        lastBotResponse = data.reply.replace(/<[^>]+>/g, ""); // Strip HTML for speech
+        appendMessage("bot", data.reply); // Append bot response
+      } else {
+        appendMessage("bot", "No response from server.");
+      }
+    } catch (error) {
+      appendMessage("bot", "An error occurred. Please try again.");
+    }
+  }
+
+  // Send button click
+  sendBtn.addEventListener("click", sendMessage);
+
+  // Enter key press
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // Prevent new line
+      sendMessage();
+    }
+  });
+
+  // Clear Chat
+  clearBtn.addEventListener("click", async () => {
+    try {
+      await fetch("/clear_chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      chatBox.innerHTML = "";
+    } catch (error) {
+      console.error("Error clearing chat:", error);
+    }
+  });
+
+  // Append Message to Chat
+  function appendMessage(sender, message) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `message ${sender === "user" ? "user-message" : "bot-message"}`;
+    messageDiv.innerHTML = message;
+    chatBox.appendChild(messageDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // Scroll to bottom on load
+  chatBox.scrollTop = chatBox.scrollHeight;
+</script>
+{% endblock %}

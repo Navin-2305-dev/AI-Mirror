@@ -1,20 +1,118 @@
 {% extends "base.html" %}
-{% block title %}Mood Analysis{% endblock %}
+
+{% block title %}
+Mood Analysis
+{% endblock %}
+
+{% block styles %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<style>
+  .mood-item {
+    transition: transform 0.2s;
+    cursor: pointer;
+  }
+  .mood-item:hover {
+    transform: scale(1.05);
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-content {
+    background-color: white;
+    padding: 24px;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+</style>
+{% endblock %}
+
 {% block chatboti %}
-<div class="container mt-4">
-  <h2 class="text-center">📊 Mood Chart</h2>
-  {% if chart %}
-    <img src="data:image/png;base64,{{ chart }}" class="img-fluid mx-auto d-block mt-4" style="max-height: 400px;" />
-    <ul class="mt-4 list-group">
-      {% for mood, count in mood_data.items() %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          {{ mood }}
-          <span class="badge bg-primary rounded-pill">{{ count }}</span>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="text-center mt-4">No mood data available yet. Try chatting first.</p>
-  {% endif %}
+<div class="min-h-screen bg-gradient-to-br from-indigo-100 to-purple-100 flex flex-col items-center justify-center p-4">
+  <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6">
+    <h1 class="text-3xl font-bold text-center text-indigo-600 mb-6">📊 Mood Analysis</h1>
+    {% if chart %}
+      <div class="mb-6">
+        <img src="data:image/png;base64,{{ chart }}" alt="Mood Chart" class="w-full rounded-lg shadow-md">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        {% for mood, count in mood_data.items() %}
+          <div class="mood-item bg-gray-50 p-4 rounded-lg shadow-sm text-center" onclick="showMoodDetails('{{ mood | safe }}')">
+            <h3 class="text-lg font-semibold text-indigo-600">{{ mood }}</h3>
+            <p class="text-gray-600">Count: {{ count }}</p>
+          </div>
+        {% endfor %}
+      </div>
+      <!-- Modal for Mood Details -->
+      <div id="mood-modal" class="modal">
+        <div class="modal-content">
+          <h2 id="modal-title" class="text-2xl font-bold text-indigo-600 mb-4"></h2>
+          <div id="modal-instances" class="mb-4"></div>
+          <h3 class="text-lg font-semibold text-gray-700">Suggestions to Improve Your Mood</h3>
+          <p id="modal-suggestions" class="text-gray-600 mb-4"></p>
+          <button onclick="closeModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Close</button>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-center text-gray-600">No mood data available yet. Try chatting first.</p>
+    {% endif %}
+    <div class="mt-6 text-center">
+      <a href="{{ url_for('home') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Back to Chat</a>
+    </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const moodInstances = JSON.parse(`{{ mood_instances | tojson | safe }}`);
+  const moodSuggestions = JSON.parse(`{{ mood_suggestions | tojson | safe }}`);
+
+  function showMoodDetails(mood) {
+    const modal = document.getElementById("mood-modal");
+    const modalTitle = document.getElementById("modal-title");
+    const modalInstances = document.getElementById("modal-instances");
+    const modalSuggestions = document.getElementById("modal-suggestions");
+
+    modalTitle.textContent = `${mood} Moments`;
+    modalSuggestions.textContent = moodSuggestions[mood] || "No suggestions available.";
+
+    const instances = moodInstances[mood] || [];
+    if (instances.length > 0) {
+      modalInstances.innerHTML = instances.map(instance => `
+        <div class="p-2 border-b border-gray-200">
+          <p class="text-sm text-gray-500">${new Date(instance.timestamp).toLocaleString()}</p>
+          <p class="text-gray-700">${instance.message}</p>
+        </div>
+      `).join("");
+    } else {
+      modalInstances.innerHTML = "<p class='text-gray-600'>No instances found.</p>";
+    }
+
+    modal.style.display = "flex";
+  }
+
+  function closeModal() {
+    const modal = document.getElementById("mood-modal");
+    modal.style.display = "none";
+  }
+
+  // Close modal when clicking outside
+  document.getElementById("mood-modal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("mood-modal")) {
+      closeModal();
+    }
+  });
+</script>
 {% endblock %}
